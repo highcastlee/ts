@@ -163,6 +163,152 @@ const obj: Act = {
 }
 ```
 
+```javascript
+let target: number[] = [];
+
+declare function fn(arr: number[], callback: (el: number) => void): void;
+forEach([1, 2, 3], (el) => {
+  target.push(el);
+}); // 통과
+forEach([1, 2, 3], (el) => target.push(el)); // 통과  (target.push(el)는 number 타입 반환)
+
+declare function fn(arr: number[], callback: (el: number) => undefined): void;
+forEach([1, 2, 3], (el) => {
+  target.push(el);
+}); // 타입 에러  : void는 undefined에 할당 불가
+forEach([1, 2, 3], (el) => target.push(el)); // 타입 에러  : number는 undefined에 할당 불가
+```
+
+---
+
+## any와 unknown
+
+- any : 어떤 타입이 와도 타입 체크가 통과함
+  - any는 타입스크립트를 사용하는 의미가 없어지니 최대한 지양
+  ```javascript
+  try{
+    ...
+  }catch(error: any){
+    console.log(error.messgae);  // 통과
+  }
+  ```
+- unknown : 어떤 타입이 올 지 모르니, 구체적인 타입 체크가 필요함
+
+  - unknown은 사용하는 시점에 as를 통해 타입을 결정하여 사용함
+  - error와 같이 어떤 타입이 올 지 모르는 경우 유용함
+
+  ```javascript
+  try{
+    ...
+  }catch(error: unknown){
+    console.log(error.messgae);  // 타입 에러
+
+    console.log((error as Error).message) // 통과
+  }
+  ```
+
+---
+
+## 타입 가드
+
+1. 타입스크립트는 if문으로 타입 구분을 해준다.
+
+```javascript
+function numOrStr(a: number | string) {
+  if (typeof a === "number") {
+    a.toFixed(1); // typescriptrk a의 type을 number로 인식
+  } else {
+    a.charAt(3); // typescript가 a의 type을 string으로 인식
+  }
+
+  if (typeof a === "boolean") {
+    a.toString(); // 타입에러 : typescript가 a의 type을 never로 인식
+  }
+}
+```
+
+2. 클래스는 클래스의 이름을 갖는 인스턴스가 타입이 된다.
+
+```javascript
+class A {
+  aaa() {}
+}
+
+function aOrB(param: A | B) {
+  if (param instanceof A) {
+    param.aaa(); // param의 type은 A이다.
+  }
+}
+
+aOrB(new A());
+```
+
+3. 객체의 속성으로도 타입을 구분할 수 있다.
+
+```javascript
+type B = { type: "b", bbb: string };
+type C = { type: "c", ccc: string };
+
+function typeCheck(a: B | C) {
+  if (a.type === "b") {
+    a.bbb; // a는 타입이 B로 인식
+  } else if (a.type === "c") {
+    a.ccc; // a는 타입이 C로 인식
+  } else {
+    a.ddd; // 타입에러 : a는 타입이 never로 인식
+  }
+}
+
+function typeCheck2(a: B | C) {
+  if ("bbb" in a) {
+    a.bbb; // a는 타입이 B로 인식
+  } else if ("ccc" in a) {
+    a.ccc; // a는 타입이 C로 인식
+  } else {
+    a.ddd; // 타입에러 : a는 타입이 never로 인식
+  }
+}
+```
+
+### is 키워드, 커스텀 타입 가드 함수
+
+is 키워드를 통해 타입 가드를 직접 커스텀할 수 있다.
+
+```typescript
+interface Cat {
+  meow: number;
+}
+interface Dog {
+  bow: number;
+}
+function catOrDog(a: Cat | Dog): a is Dog {
+  if ((a as Cat).meow) return false;
+  return true;
+}
+
+function typeCheck(a: Cat | Dog) {
+  if (catOrDog(a)) {
+    console.log(a.bow); // a 타입은 Dog
+  } else {
+    console.log(a.meow); // a 타입은 Cat
+  }
+}
+```
+
+```typescript
+const isRejected (input: PromiseSettledResult<unknown>): input is PromiseRejectedResult => {
+  return input.status === 'rejected'
+};
+const isFulfilled = <T>(input: PromiseSettledResult<T>): input is PromiseFulfilledResult<T> => {
+  return input.status === 'fulfilled'
+};
+
+const promises = await Promise.allSettled([Promise.resolve('a'), Promise.resolve('b')]);
+// const errors = promises.filter((promise) => promise.status === 'rejected')
+const errors = promises.filter(isRejected); // errors의 타입은 PromiseRejectedResult[]
+
+```
+
 ---
 
 ## never 타입
@@ -305,5 +451,25 @@ type ExtractType = ExtractTypeByName<All, 'cat'> // 타입 에러
 7. 재어 흐름 분석의 좁은 타입
 
 8. 호환되지 않는 타입의 불가능한 교차 타입 표시
+
+---
+
+# typescript v.4.8
+
+## {}와 Object
+
+- type이 {}이거나 Object라면, 모든 타입을 허용한다는 뜻이다.
+- 단, 소문자인 object는 객체 타입을 의미함.
+- typescript v4.8부터 unknown의 type이 {}로 체크됨
+
+```typescript
+const a: {} = "allow"; // 허용
+const b: Object = 10; // 허용
+const z: unknown = "hi"; // 허용
+
+if (z) {
+  z; // z의 타입은 v4.7에서는 unknown, v4.8에서는 {}로 나옴
+}
+```
 
 ---
