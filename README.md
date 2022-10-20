@@ -311,6 +311,50 @@ const errors = promises.filter(isRejected); // errors의 타입은 PromiseReject
 
 ---
 
+## readonly
+
+읽기 전용 속성 타입
+
+```typescript
+interface A {
+  readonly name: string;
+  age: number;
+}
+
+const customer: A = { name: "Jake", age: 21 };
+customer.age += 1; // 통과
+customer.name = "Mike"; // 타입 에러 : 읽기 전용 속성이므로 'name'에 할당할 수 없음
+```
+
+## index signature
+
+정해진 구조에 대한 타입 정의
+
+```typescript
+type A = { [key: string]: number }; // 어떤 key가 string이면 값은 number다.
+const aaa: A = { Human: 1, Mammal: 12, Animal: 10 };
+```
+
+## maped types
+
+정해진 값들로 타입 정의
+
+```typescript
+type B = "Human" | "Mammal" | "Animal"; // interface는 객체 형식만 가능
+type C = { [key in B]: number }; // B에 해당하는 key는 number다.
+const ccc: C = { Human: 1, Mammal: 12, Animal: 10 };
+```
+
+---
+
+## typescript의 Class
+
+- implements :
+- private :
+- protected :
+
+---
+
 ## never 타입
 
 [TOAST UI: Never 타입](https://ui.toast.com/weekly-pick/ko_20220323)
