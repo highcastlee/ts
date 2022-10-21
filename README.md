@@ -355,6 +355,99 @@ const ccc: C = { Human: 1, Mammal: 12, Animal: 10 };
 
 ---
 
+## 공변성과 반공변성 그리고 이변성
+
+[관련 자료 바로가기](https://seob.dev/posts/%EA%B3%B5%EB%B3%80%EC%84%B1%EC%9D%B4%EB%9E%80-%EB%AC%B4%EC%97%87%EC%9D%B8%EA%B0%80/)
+
+### 공변성
+
+```typescript
+let array: Array<string | number> = [];
+let stringArray: Array<string> = [];
+array = stringArray; // OK
+stringArray = array; // Error
+```
+
+array에 stringArray를 대입할 수 있다.
+`Array<T>`에서 T 타입을 반환하는데, string 반환은 string|number에 서브타입이기 때문이다.
+
+반면, stringArray의 string에 string|number를 대입할 수는 없다.
+
+이렇게 A 가 B 의 서브타입일 때, `T<A>` 가 `T<B>` 의 서브타입이 된다면, T 를 **공변적**이라고 부를 수 있다.
+
+위의 예제는 Array의 공변성을 보여주는 예시이다.
+
+### 반공변성
+
+```typescript
+type Logger<T> = (param: T) => void;
+let log: Logger<string | number> = (param) => {
+  console.log(param);
+};
+let logNumber: Logger<number> = (param) => {
+  console.log(param);
+};
+log = logNumber; // Error
+logNumber = log; // OK
+```
+
+공변성과 반대로, log에 logNumber를 대입할 수 없다.
+logNumber는 string 타입을 커버하지 못하기 때문이다.
+`Logger<string|number>`가 `Logger<number>`의 서브타입이 된다.
+
+A가 B의 서브타입일 때, `T<B>`가 `T<A>`의 서브타입이 된다면,
+T를 **반공변적**이라고 부를 수 있다.
+
+### 이변성
+
+이변성은 공변성과 반공변성을 모두 사용 가능하도록 하는 것이다.
+
+```typescript
+interface Array<T> {
+  // 실제로는 push(...item: T[]): number;
+  push(item: T): number;
+}
+```
+
+함수의 파라미터는 반공변적이기 때문에 push 메서드를 고려했을 때, `Array<string>`은 `Array<string|number>`의 서브타입이 될 수 없다.
+하지만, 직관적으로는 `Array<string>`이 `Array<string|number>`의 서브타입인 것처럼 보이는 것이 마땅하다.
+
+#### --strictFunctionTypes 설정을 켜면, 함수의 파라미터가 반공변적으로 동작하는데, Array는 왜 에러가 나지 않을까?
+
+```typescript
+// 실제 lib.es5.d.ts 파일의 Array의 타입 정의
+interface Array<T> {
+  // ...
+  push(...items: T[]): number;
+  // ...
+}
+```
+
+타입스크립트는 이변성이 필요한 경우를 대비하여 특별한 장치를 마련해놨다.
+바로, 표기법의 차이다.
+
+```typescript
+interface Array<T> {
+  //줄여쓰기 방식
+  push(...items: T[]): number;
+}
+
+interface Array<T> {
+  // 프로퍼티 방식
+  push: (...items: T[]) => number;
+}
+```
+
+줄여쓰기 방식은 메서드를 **이변적**으로 동작하기 위한 표기법이고,
+프로퍼티 방식은 메서드를 **반공변적**으로 동작하기 위한 표기법이다.
+
+> 핵심을 정리하자면,
+> 함수의 반환값은 공변적, 함수의 파라미터는 반공변적.
+> 메서드 줄여쓰기는 이변적, 프로퍼티 방식은 반공변적.
+> 단, type-safety측면에서는 굳이 이변적으로 작성할 필요는 없을 듯하다.
+
+---
+
 ## never 타입
 
 [TOAST UI: Never 타입](https://ui.toast.com/weekly-pick/ko_20220323)
